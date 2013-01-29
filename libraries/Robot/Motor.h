@@ -1,28 +1,26 @@
 /*
-  Robot.h - 
+  Motor.h - 
   Released into the public domain.
 */
 
-#ifndef Robot_h
-#define Robot_h
+#ifndef Motor_h
+#define Motor_h
 
 #include <Arduino.h>
 #include <AFMotor.h>
 
-class Robot
+class Motor
 {
   public:
   	float oneDegree;
 
-    Robot(int speed);
+    Motor();
 	void setSpeed(int speed);
 	void forward(long time);
 	void backward(long time);
 	void halt(long time);
 	void turnLeft(int degrees);
 	void turnRight(int degrees);
-	void cylonScan();
-	float range();
 
   private:
 };
