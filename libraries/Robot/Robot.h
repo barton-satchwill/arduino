@@ -15,16 +15,21 @@ class Robot
   	float oneDegree;
 
     Robot(int speed);
-	void setSpeed(int speed);
+    void init();
+	void setSpeed(int theSpeed);
+	int getSpeed();
 	void forward(long time);
 	void backward(long time);
 	void halt(long time);
 	void turnLeft(int degrees);
 	void turnRight(int degrees);
-	void cylonScan();
+	void cylonScan(int scanAngle);
 	float range();
+	long brightness();
+	long adjustSpeed();
 
   private:
+  	int speed;
 };
 
 #endif

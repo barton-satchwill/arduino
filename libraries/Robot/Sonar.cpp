@@ -35,6 +35,7 @@ float Sonar::range () {
  long duration = ping();
 
  float inches = microsecondsToInches(duration);
+ Serial.print("range: ");
  Serial.print(inches);
  Serial.println("\"");
  return inches;

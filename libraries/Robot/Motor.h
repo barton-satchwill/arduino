@@ -13,8 +13,9 @@ class Motor
 {
   public:
   	float oneDegree;
+  	int speed;
 
-    Motor();
+  Motor();
 	void setSpeed(int speed);
 	void forward(long time);
 	void backward(long time);
