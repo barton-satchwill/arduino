@@ -1,44 +1,33 @@
 /*
-Original code by Nick Brenn
+ Original code by Nick Brenn
  Modified by Marc de Vinck
  Make Projects Arduino-based 4WD robot
  http://makeprojects.com/Project/Build-your-own-Arduino-Controlled-Robot-/577/1
- */
+*/
 
-#include <AFMotor.h>
 #include <Robot.h>
-//#include <Sonar.h>
+#include <AFMotor.h>
 
-Robot robot(100);
+Robot *pRobot;
 
 void setup() {
-  Serial.begin(9600); // set up Serial library at 9600 bps
+  Serial.begin(9600); 
+  delay(1000);
+  pRobot = new Robot(120);
+  Serial.println(pRobot->toString());
   Serial.println("here we go...");
 }
 
-void loop() { // This is the main program that will run over and over
-//  test();
-  run();
+void loop() { 
+	int i = 1;	
+	while (pRobot->range() > 8){
+		if ((i++ % 20) == 0){
+			pRobot->cylonScan(45);
+		}
+		pRobot->forward(200);
+	}
+	while (pRobot->range() < 10){
+		pRobot->backward(200);
+	}
+	pRobot->cylonScan(90);
 }
-
-void test() {
-//  cylonScan();
-  robot.turnLeft(30);
-  robot.halt(500);
-}
-
-
-void run()
-{
-  while (robot.range() > 8){ 
-    robot.forward(200); 
-  }
-
-  while (robot.range() < 10){ 
-    robot.backward(200); 
-  }
-
-  robot.cylonScan();
-}
-
-

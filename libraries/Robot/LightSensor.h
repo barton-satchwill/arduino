@@ -18,11 +18,15 @@ class LightSensor
 	long read();
 	long maxBrightness();
 	long minBrightness();
+  String toString();
 
   private:
   	long minread;	// minimum value from calibration phase
   	long maxread;	//maximum value from calibration phase
   	long val;		//stores raw value from photocell
+    int id;
+    static int count;   
+    
 
 
 // long val = 0;        //stores raw value from photocell

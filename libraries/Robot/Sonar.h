@@ -16,8 +16,12 @@ class Sonar
 
 	float ping();
 	float range();
+	String toString();
 
   private:
+	int id;
+	static int count;
+  	
 	float microsecondsToInches(long microseconds);
 };
 

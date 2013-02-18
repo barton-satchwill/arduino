@@ -8,16 +8,19 @@
 
 #include <Arduino.h>
 #include <AFMotor.h>
+#include <Motor.h>
+#include <Sonar.h>
+#include <lightSensor.h>
+
 
 class Robot
 {
   public:
-  	float oneDegree;
-
     Robot(int speed);
     void init();
 	void setSpeed(int theSpeed);
 	int getSpeed();
+	String toString();
 	void forward(long time);
 	void backward(long time);
 	void halt(long time);
@@ -29,7 +32,12 @@ class Robot
 	long adjustSpeed();
 
   private:
+	int id;
+	static int count;
   	int speed;
+	Motor motor;
+	Sonar sonar;
+	LightSensor lightSensor;
 };
 
 #endif

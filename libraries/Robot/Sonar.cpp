@@ -6,9 +6,16 @@
 #include <Sonar.h>
 
 const int PING_PIN = 19;
+int Sonar::count = 0;
 
 
-Sonar::Sonar() {}  
+Sonar::Sonar() {
+	id = count++;
+} 
+
+String Sonar::toString() {
+	return "Sonar " + String(id);
+} 
 
 // This is the code that runs the PING))) Sensor
 float Sonar::ping () {
