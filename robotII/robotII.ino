@@ -21,13 +21,15 @@ void setup() {
 void loop() { 
 	int i = 1;	
 	while (pRobot->range() > 8){
-		if ((i++ % 20) == 0){
+		// take a look around every 20 * 200 milliseconds
+		if ((i++ % 40) == 0){
 			pRobot->cylonScan(45);
 		}
-		pRobot->forward(200);
+		pRobot->setAdjustedSpeed(120);
+		pRobot->forward(100);
 	}
 	while (pRobot->range() < 10){
-		pRobot->backward(200);
+		pRobot->backward(100);
 	}
 	pRobot->cylonScan(90);
 }

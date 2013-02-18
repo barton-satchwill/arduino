@@ -19,6 +19,7 @@ class Robot
     Robot(int speed);
     void init();
 	void setSpeed(int theSpeed);
+	void setAdjustedSpeed(int theSpeed);
 	int getSpeed();
 	String toString();
 	void forward(long time);
@@ -29,7 +30,8 @@ class Robot
 	void cylonScan(int scanAngle);
 	float range();
 	long brightness();
-	long adjustSpeed();
+	int setSpeedForBrightness();
+	int setSpeedForRange(int speed, int triggerDistance, int minDistance);
 
   private:
 	int id;

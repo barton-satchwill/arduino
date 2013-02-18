@@ -5,12 +5,11 @@
 
 #include <Motor.h>
 #include <Sonar.h>
-//#include <MotorUnit.h>
 
 int Motor::count = 0;
 const int MAX_SPEED = 255;
 const int MIN_SPEED = 75;
-const int HALT_TIME = 500;
+const int HALT_TIME = 3000;
 const float oneDegree = 2338.0/360.0;
 
 
@@ -49,7 +48,7 @@ int Motor::getSpeed() {
 }
 
 void Motor::forward(long time) { 
-  Serial.println("forward");
+  // Serial.println("forward");
   if (direction != AHEAD) {
     halt();
   }
@@ -62,7 +61,7 @@ void Motor::forward(long time) {
 }
 
 void Motor::backward(long time) { 
-  Serial.println("backward");
+  // Serial.println("backward");
   if (direction != REVERSE) {
     halt();
   }
@@ -83,7 +82,7 @@ void Motor::halt() {
 void Motor::halt(long time) {
   if (direction != STOPPED){
     direction = STOPPED;
-    Serial.println("halt");
+    // Serial.println("halt");
     back_left.run(RELEASE);
     back_right.run(RELEASE);
     front_right.run(RELEASE);
@@ -98,7 +97,7 @@ void Motor::turnRight(int degrees) {
   }
   direction = RIGHT_TURN;
   long turnTime = degrees * oneDegree;
-  Serial.println("turn right " + String(degrees) + " degrees in " + String(turnTime) + " milliseconds");
+  // Serial.println("turn right " + String(degrees) + " degrees in " + String(turnTime) + " milliseconds");
   int originalSpeed = speed;
   setSpeed(MAX_SPEED);
   front_right.run(BACKWARD);
@@ -115,7 +114,7 @@ void Motor::turnLeft(int degrees) {
   }
   direction = LEFT_TURN;
   long turnTime = degrees * oneDegree;
-  Serial.println("turn left " + String(degrees) + " degrees in " + String(turnTime) + " milliseconds");
+  // Serial.println("turn left " + String(degrees) + " degrees in " + String(turnTime) + " milliseconds");
   int originalSpeed = speed;
   setSpeed(MAX_SPEED);
   front_right.run(FORWARD);

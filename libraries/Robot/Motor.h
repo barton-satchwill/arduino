@@ -22,6 +22,7 @@ class Motor
   void halt(long time);
 	void turnLeft(int degrees);
 	void turnRight(int degrees);
+
   String toString();
 
   private:
