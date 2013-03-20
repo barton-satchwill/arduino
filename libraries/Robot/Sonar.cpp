@@ -1,55 +1,53 @@
 /*
-  Sonar.cpp - 
+  Sonar.cpp -
   Released into the public domain.
 */
 
 #include <Sonar.h>
 
-const int PING_PIN = 19;
+#define PING_PIN 19
 int Sonar::count = 0;
 
 
 Sonar::Sonar() {
-	id = count++;
-} 
+    id = count++;
+}
 
 String Sonar::toString() {
-	return "Sonar " + String(id);
-} 
+    return "Sonar " + String(id);
+}
 
 // This is the code that runs the PING))) Sensor
 float Sonar::ping () {
- long duration;
- pinMode(PING_PIN, OUTPUT);
+    long duration;
+    pinMode(PING_PIN, OUTPUT);
 
- // clear
- digitalWrite(PING_PIN, LOW);
- delayMicroseconds(2);
+    // clear
+    digitalWrite(PING_PIN, LOW);
+    delayMicroseconds(2);
 
- // ping
- digitalWrite(PING_PIN, HIGH);
- delayMicroseconds(5);
- digitalWrite(PING_PIN, LOW);
+    // ping
+    digitalWrite(PING_PIN, HIGH);
+    delayMicroseconds(5);
+    digitalWrite(PING_PIN, LOW);
 
- // listen
- pinMode(PING_PIN, INPUT);
- duration = pulseIn(PING_PIN, HIGH);
+    // listen
+    pinMode(PING_PIN, INPUT);
+    duration = pulseIn(PING_PIN, HIGH);
 
- return duration;
+    return duration;
 }
 
 float Sonar::range () {
- long duration = ping();
+    long duration = ping();
 
- float inches = microsecondsToInches(duration);
- // Serial.print("range: ");
- // Serial.print(inches);
- // Serial.println("\"");
- return inches;
+    float inches = microsecondsToInches(duration);
+    // Serial.println("range: " + String((int)inches) + "\"");
+    return inches;
 }
 
-float Sonar::microsecondsToInches(long microseconds){
- return microseconds / 74.0 / 2.0;
+float Sonar::microsecondsToInches(long microseconds) {
+    return microseconds / 74.0 / 2.0;
 }
 
 

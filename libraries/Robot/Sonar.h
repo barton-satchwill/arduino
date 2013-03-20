@@ -1,5 +1,5 @@
 /*
-  Sonar.h - 
+  Sonar.h -
   Released into the public domain.
 */
 
@@ -7,22 +7,22 @@
 #define Sonar_h
 
 #include <Arduino.h>
-#include <AFMotor.h>
+// #include <AFMotor.h>
 
 class Sonar
 {
-  public:
+public:
     Sonar();
 
-	float ping();
-	float range();
-	String toString();
+    float ping();
+    float range();
+    String toString();
 
-  private:
-	int id;
-	static int count;
-  	
-	float microsecondsToInches(long microseconds);
+private:
+    int id;
+    static int count;
+
+    float microsecondsToInches(long microseconds);
 };
 
 #endif

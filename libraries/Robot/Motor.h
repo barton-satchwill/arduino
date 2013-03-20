@@ -1,5 +1,5 @@
 /*
-  Motor.h - 
+  Motor.h -
   Released into the public domain.
 */
 
@@ -11,24 +11,24 @@
 
 class Motor
 {
-  public:
+public:
 
-  Motor();
-	void setSpeed(int speed);
-  int getSpeed();
-	void forward(long time);
-	void backward(long time);
-  void halt();
-  void halt(long time);
-	void turnLeft(int degrees);
-	void turnRight(int degrees);
+    Motor();
+    void setSpeed(int speed);
+    int getSpeed();
+    void forward(long time);
+    void backward(long time);
+    void halt();
+    void halt(long time);
+    void turnLeft(int degrees);
+    void turnRight(int degrees);
 
-  String toString();
+    String toString();
 
-  private:
+private:
     enum directionType {AHEAD, REVERSE, LEFT_TURN, RIGHT_TURN, STOPPED};
     void motorOn();
-    static int count;   
+    static int count;
     int id;
     directionType direction;
     int speed;
