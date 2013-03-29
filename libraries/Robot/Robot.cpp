@@ -18,8 +18,8 @@
 #define RANGE 0
 #define ANGLE 1
 
-enum action {A, B, C, D, E, F};
-char* actions[] = {"A", "B", "C", "D", "E", "F"};
+enum action {INIT, MOVE, PING, CHECK, DONE, F};
+char* actions[] = {"INIT", "MOVE", "PING", "CHECK", "DONE", "F"};
 volatile action sonarAction = F;
 volatile int EIGHT_HZ = 3500;
 
@@ -28,6 +28,7 @@ int scanDirection = 10;
 int maxRange;
 int sonarRange;
 long moveDelay = 30;
+int scanRate = 5;
 volatile long wait;
 volatile long start;
 
@@ -56,7 +57,7 @@ ISR(TIMER2_COMPA_vect){
     Serial.println((millis()-start)/1000);
     EIGHT_HZ = 0;
     digitalWrite(LED, LOW); //digitalRead(LED) ^ 1);
-    sonarAction = A;
+    sonarAction = INIT;
   }
 }
 
@@ -178,61 +179,68 @@ void Robot::rangeScan(int scanAngle) {
 }
 
 
-
-
 void Robot::scan() {
   int r;
   int t = (millis()-start)/1000;
   // Serial.println(actions[sonarAction]);
   switch (sonarAction) {
-    case A: // move to inital position
+    case INIT: // move to inital position
       r = 0;
       sonarRange = 0;
-      if (angle <90) {
-        angle = 0;
-        scanDirection = +10;
-      }
-      if (angle >90) {
-        angle = 180;
-        scanDirection = -10;
-      }
-      sonarAction = B;
+      angle = 0;
+      scanDirection = +10;
+      moveServo(angle);
+      sonarAction = MOVE;
       break;
       
-    case B: // move a step
+    case MOVE: // move a step
       digitalWrite(RGB_BLUE, HIGH);
       angle = angle + scanDirection;
       angle = min(angle, 170);
       angle = max(angle, 10);
-      servo.write(angle);
-      wait = millis() + moveDelay;
-      sonarAction = C;
+      moveServo(angle);
+      sonarAction = PING;
       break;
 
-    case C: // take the range
-      if (millis() > wait){
+    case PING: // take the range
+      if (servoReady()){
         // r = range();
         Serial.print(" : range at angle " + String(angle) + " is " + String(r) + " at t = " + String(t) + "\n");
         sonarRange = max(sonarRange, r);
-        sonarAction = D;
+        sonarAction = CHECK;
         digitalWrite(RGB_BLUE, LOW);
       }
       break;
 
-    case D: // check for complete scan
-      if ((servo.read() >= 170 && scanDirection==+10) || (servo.read() <= 10 && scanDirection==-10)) {
-        sonarAction = E;
+    case CHECK: // check for complete scan
+      if (scanComplete()) {
+        moveServo(90);
+        sonarAction = DONE;        
       } else {
-        sonarAction = B;
+        sonarAction = MOVE;
       }
       break;
 
-    case E: //scan complete
+    case DONE: //scan complete
       break;
     case F:
       break;
     default:
-      ;
+      break;
   }
 }
 
+void Robot::moveServo(int angle){
+  if (servoReady()) {
+      wait = millis() + (scanRate * abs(servo.read() - angle));
+      servo.write(angle);  
+    }
+}
+
+boolean Robot::servoReady(){
+  return millis() > wait;
+}
+
+boolean Robot::scanComplete() {
+  return ((servo.read() >= 170 && scanDirection==+10) || (servo.read() <= 10 && scanDirection==-10));
+}

@@ -38,6 +38,9 @@ public:
 
 
 private:
+    void moveServo(int angle);
+    boolean servoReady();
+    boolean scanComplete();
     int id;
     static int count;
     int speed;
