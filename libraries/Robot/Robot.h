@@ -20,8 +20,6 @@ public:
     Robot(int speed);
     void init();
     void setSpeed(int theSpeed);
-    void setAdjustedSpeed(int theSpeed);
-    int getSpeed();
     String toString();
     void forward(long time);
     void backward(long time);
@@ -32,9 +30,6 @@ public:
     void scan();
     float range();
     long brightness();
-    int setSpeedForBrightness();
-    int setSpeedForRange(int speed, int triggerDistance, int minDistance);
-    void servoTest();
 
 
 private:

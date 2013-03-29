@@ -6,21 +6,13 @@
 #include <Robot.h>
 #include <Logging.h>
 
-// diyode shield
-#define RGB_RED 11
-#define RGB_GREEN 10
-#define RGB_BLUE 9
-#define LED 6
-#define SERVO 5
-
 //motor control shield
 // #define SERVO 9
 #define RANGE 0
 #define ANGLE 1
 
 enum action {INIT, MOVE, PING, CHECK, DONE, F};
-char* actions[] = {"INIT", "MOVE", "PING", "CHECK", "DONE", "F"};
-volatile action sonarAction = F;
+volatile action sonarAction = DONE;
 volatile int EIGHT_HZ = 3500;
 
 volatile int angle;
@@ -30,7 +22,14 @@ int sonarRange;
 long moveDelay = 30;
 int scanRate = 5;
 volatile long wait;
+
+//Debug and development stuff
 volatile long start;
+char* actions[] = {"INIT", "MOVE", "PING", "CHECK", "DONE", "F"};
+#define RGB_BLUE 9
+#define LED 6
+#define SERVO 5
+
 
 Servo servo;  // create servo object to control a servo
 int Robot::count = 0;
@@ -80,18 +79,6 @@ void Robot::setSpeed(int speed) {
 }
 
 
-void Robot::setAdjustedSpeed(int speed) {
-    this->speed = setSpeedForBrightness();
-    this->speed = setSpeedForRange(this->speed, 18,8);
-    motor.setSpeed(this->speed);
-}
-
-
-int Robot::getSpeed() {
-    return motor.getSpeed();
-}
-
-
 String Robot::toString() {
     return
         String("------------------------------------\n") +
@@ -133,13 +120,6 @@ float Robot::range () {
     return sonar.range();
 }
 
-
-int Robot::setSpeedForRange(int speed, int triggerDistance, int minDistance) {
-    // double slope = 255.0 / double(triggerDistance - minDistance);
-    // double spd = min(speed, max(0,(range()-minDistance)) * slope);
-    // return spd;
-    return speed;
-}
 
 
 void Robot::rangeScan(int scanAngle) {
@@ -223,8 +203,7 @@ void Robot::scan() {
 
     case DONE: //scan complete
       break;
-    case F:
-      break;
+
     default:
       break;
   }
