@@ -4,16 +4,63 @@
 */
 
 #include <Robot.h>
-  #include <Logging.h>
+#include <Logging.h>
 
-#define SERVO 9
+// diyode shield
+#define RGB_RED 11
+#define RGB_GREEN 10
+#define RGB_BLUE 9
+#define LED 6
+#define SERVO 5
+
+//motor control shield
+// #define SERVO 9
 #define RANGE 0
 #define ANGLE 1
 
-// we need to map around pin 9, which is used for the servo
-int LEDbar[] = {3,4,5,6,7,8,10,11,12,13};
+enum action {A, B, C, D, E, F};
+char* actions[] = {"A", "B", "C", "D", "E", "F"};
+volatile action sonarAction = F;
+volatile int EIGHT_HZ = 3500;
+
+volatile int angle;
+int scanDirection = 10;
+int maxRange;
+int sonarRange;
+long moveDelay = 30;
+volatile long wait;
+volatile long start;
+
 Servo servo;  // create servo object to control a servo
 int Robot::count = 0;
+
+
+
+
+void setupTimer() {
+  noInterrupts();
+  // 8 bit timer
+  TCCR2A = 0;               // set entire TCCR2A register to 0
+  TCCR2B = 0;               // same for TCCR2B
+  TCNT2  = 0;               //initialize counter value to 0
+  // set compare match register for 4khz increments
+  OCR2A = 249;              // = (16*10^6) / (1000 * 64) - 1 (must be <256)
+  TCCR2A |= (1 << WGM21);   // turn on CTC mode
+  TCCR2B |= (1 << CS12) | (1<<CS10);    // Set CS10 and CS12 bit for 64 prescaler
+  TIMSK2 |= (1 << OCIE2A);  // enable timer compare interrupt
+  interrupts();
+}  
+
+ISR(TIMER2_COMPA_vect){
+  if (EIGHT_HZ++ == (4 * 1000)) {  // every 4 seconds
+    Serial.println((millis()-start)/1000);
+    EIGHT_HZ = 0;
+    digitalWrite(LED, LOW); //digitalRead(LED) ^ 1);
+    sonarAction = A;
+  }
+}
+
+
 
 
 Robot::Robot(int speed) {
@@ -21,6 +68,8 @@ Robot::Robot(int speed) {
     setSpeed(speed);
     servo.attach(SERVO);  // attaches the servo to the servo object
     servo.write(90);
+    setupTimer();
+    start = millis();
 }
 
 
@@ -104,10 +153,6 @@ void Robot::rangeScan(int scanAngle) {
     servo.write(scanAngle/2);
     delay((scanAngle/2)*scanRate);
 
-    // for (int i=0; i<10; i++){
-    //   digitalWrite(LEDbar[i], LOW);
-    // }
-
     for (int angle = 90-scanAngle/2; angle <= 90+(scanAngle/2); angle +=scanStep) {
         servo.write(angle);
         delay(scanRate*scanStep);
@@ -133,62 +178,61 @@ void Robot::rangeScan(int scanAngle) {
 }
 
 
-void Robot::servoTest() {
-    // power pro: 0.165 msec/60° ==> 2.75 msec / degree
-    // hitec: 5 msec / degree
-    float scanRate = 5;
-    int scanAngle = 90;
-    int scanStep = 10;
-    int max[] = {0,0}; // range, angle
-    int range = 0;
 
-    servo.write(scanAngle/2);
-    delay((scanAngle/2)*scanRate);
 
-    // for (int i=0; i<10; i++){
-    //   digitalWrite(LEDbar[i], LOW);
-    // }
+void Robot::scan() {
+  int r;
+  int t = (millis()-start)/1000;
+  // Serial.println(actions[sonarAction]);
+  switch (sonarAction) {
+    case A: // move to inital position
+      r = 0;
+      sonarRange = 0;
+      if (angle <90) {
+        angle = 0;
+        scanDirection = +10;
+      }
+      if (angle >90) {
+        angle = 180;
+        scanDirection = -10;
+      }
+      sonarAction = B;
+      break;
+      
+    case B: // move a step
+      digitalWrite(RGB_BLUE, HIGH);
+      angle = angle + scanDirection;
+      angle = min(angle, 170);
+      angle = max(angle, 10);
+      servo.write(angle);
+      wait = millis() + moveDelay;
+      sonarAction = C;
+      break;
 
-    for (int angle = scanAngle/2; angle <= (scanAngle/2) + scanAngle; angle +=scanStep) {
-        servo.write(angle);
-        int i = map(angle, 45, 135, 0, 9);
-        range = this->range();
-        // digitalWrite(LEDbar[i-1], LOW);
-        // digitalWrite(LEDbar[i], HIGH);
-        delay(scanRate*scanStep);
+    case C: // take the range
+      if (millis() > wait){
+        // r = range();
+        Serial.print(" : range at angle " + String(angle) + " is " + String(r) + " at t = " + String(t) + "\n");
+        sonarRange = max(sonarRange, r);
+        sonarAction = D;
+        digitalWrite(RGB_BLUE, LOW);
+      }
+      break;
 
-        if(range > max[0]) {
-            max[RANGE] = range;
-            max[ANGLE] = angle;
-        }
-    }
-    // for (int i=0; i<scanStep; i++){
-    //   digitalWrite(LEDbar[i], LOW);
-    // }
-    // digitalWrite(LEDbar[map(max[ANGLE],45,135,0,9)], HIGH);
-    servo.write(90);
-    delay((scanAngle/2)*scanRate);
+    case D: // check for complete scan
+      if ((servo.read() >= 170 && scanDirection==+10) || (servo.read() <= 10 && scanDirection==-10)) {
+        sonarAction = E;
+      } else {
+        sonarAction = B;
+      }
+      break;
 
-    Serial.println("max is at angle " + String(max[ANGLE]) + " (index "+ String(map(max[1],45,135,0,9)) + ") range " + String (max[RANGE]));
-
-    if(max[ANGLE] <= 90) {
-        turnLeft(90-max[ANGLE]);
-    } else {
-        turnRight(max[ANGLE]-90);
-    }
-}
-
-// ------- light sensor ----------
-
-// long Robot::brightness() {
-//   return lightSensor.read();
-// }
-
-int Robot::setSpeedForBrightness() {
-    // double brightnessRange = lightSensor.maxBrightness() - lightSensor.minBrightness();
-    // double scaleFactor = 255.0 / brightnessRange;
-    // int speed = int((lightSensor.read() - lightSensor.minBrightness()) * scaleFactor);
-    // Serial.println("brighness speed = " + String(speed) + "(" + String(int(  (lightSensor.read() - lightSensor.minBrightness()) )) + ")");
-    return speed;
+    case E: //scan complete
+      break;
+    case F:
+      break;
+    default:
+      ;
+  }
 }
 

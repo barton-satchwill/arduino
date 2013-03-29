@@ -29,6 +29,7 @@ public:
     void turnLeft(int degrees);
     void turnRight(int degrees);
     void rangeScan(int scanAngle);
+    void scan();
     float range();
     long brightness();
     int setSpeedForBrightness();
