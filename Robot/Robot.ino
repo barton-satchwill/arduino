@@ -25,11 +25,13 @@ void setup() {
 
 void loop() {
   drive();
-  delay(100);
-  pRobot->scan();
+  int range = pRobot->rangeScan(60);
+  Serial.println("turn angle is "+ String(range));
 }
 
 void drive() {
+//  Serial.print("range is " );
+//  Serial.println(pRobot->range());
 }
 
 

@@ -18,7 +18,6 @@ class Robot
 {
 public:
     Robot(int speed);
-    void init();
     void setSpeed(int theSpeed);
     String toString();
     void forward(long time);
@@ -27,9 +26,8 @@ public:
     void turnLeft(int degrees);
     void turnRight(int degrees);
     void rangeScan(int scanAngle);
-    void scan();
     float range();
-    long brightness();
+    int getTurnAngle();
 
 
 private:

@@ -39,11 +39,12 @@ float Sonar::ping () {
 }
 
 float Sonar::range () {
-    long duration = ping();
+    return random(2,20);
+    // long duration = ping();
 
-    float inches = microsecondsToInches(duration);
-    // Serial.println("range: " + String((int)inches) + "\"");
-    return inches;
+    // float inches = microsecondsToInches(duration);
+    // // Serial.println("range: " + String((int)inches) + "\"");
+    // return inches;
 }
 
 float Sonar::microsecondsToInches(long microseconds) {
