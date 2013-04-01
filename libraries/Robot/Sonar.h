@@ -21,6 +21,9 @@ public:
 private:
     int id;
     static int count;
+    long pingTime;
+    // int pingFrequency;
+    long duration;
 
     float microsecondsToInches(long microseconds);
 };

@@ -7,10 +7,12 @@
 
 #define PING_PIN 19
 int Sonar::count = 0;
+int pingFrequency = 10;
 
 
 Sonar::Sonar() {
     id = count++;
+    pingTime = millis();
 }
 
 String Sonar::toString() {
@@ -19,7 +21,7 @@ String Sonar::toString() {
 
 // This is the code that runs the PING))) Sensor
 float Sonar::ping () {
-    long duration;
+    // long duration;
     pinMode(PING_PIN, OUTPUT);
 
     // clear
@@ -39,12 +41,14 @@ float Sonar::ping () {
 }
 
 float Sonar::range () {
-    return random(2,20);
-    // long duration = ping();
+    if (millis() > (pingTime + pingFrequency)) {
+        duration = ping();
+        pingTime = millis();
+    }
 
-    // float inches = microsecondsToInches(duration);
-    // // Serial.println("range: " + String((int)inches) + "\"");
-    // return inches;
+    float inches = microsecondsToInches(duration);
+    // Serial.println("range: " + String((int)inches) + "\"");
+    return inches;
 }
 
 float Sonar::microsecondsToInches(long microseconds) {
