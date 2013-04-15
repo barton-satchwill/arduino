@@ -7,19 +7,20 @@
 #include <Logging.h>
 
 //motor control shield
-// #define SERVO 9
+#define SERVO 9
 enum {RANGE, ANGLE};
-enum action {INIT, MOVE, PING, CHECK, DONE, F};
-volatile action sonarAction = DONE;
-volatile int EIGHT_HZ = 3500;
+enum action {INIT, MOVE, PING, CHECK, DONE, READY};
+volatile action sonarAction = READY;
+volatile int EIGHT_HZ = 0;
 
 volatile int servoAngle;
+float rangeForward;
 int scanAngle;
 int servoLimit;
 int servoDirection = 10;
 int maxRange;
 // int sonarRange;
-long moveDelay = 30;
+// long moveDelay = 30;
 volatile long wait;
 Servo servo;  // create servo object to control a servo
 int Robot::count = 0;
@@ -32,33 +33,32 @@ int scanStep = 10;
 int max[] = {0,0}; // range, angle
 int range = 0;
 
-int turnAngle = 0;
+int turnAngle = 90;
 
-//Debug and development stuff
-#define SERVO 5
-int report = 0;
-
+long scanFrequency = 1*1000;
 
 
 
 void setupTimer() {
   noInterrupts();
   // 8 bit timer
-  TCCR2A = 0;               // set entire TCCR2A register to 0
-  TCCR2B = 0;               // same for TCCR2B
-  TCNT2  = 0;               //initialize counter value to 0
-  // set compare match register for 4khz increments
-  OCR2A = 249;              // = (16*10^6) / (1000 * 64) - 1 (must be <256)
-  TCCR2A |= (1 << WGM21);   // turn on CTC mode
-  TCCR2B |= (1 << CS12) | (1<<CS10);    // Set CS10 and CS12 bit for 64 prescaler
-  TIMSK2 |= (1 << OCIE2A);  // enable timer compare interrupt
+  TCCR2A = 0;                         // set entire TCCR2A register to 0
+  TCCR2B = 0;                         // same for TCCR2B
+  TCNT2  = 0;                         //initialize counter value to 0
+                                      // set compare match register for 8khz increments
+  OCR2A = 249;                        // = (16*10^6) / (1000 * 64) - 1 (must be <256)
+  TCCR2A |= (1 << WGM21);             // turn on CTC mode
+  TCCR2B |= (1 << CS12) ; //| (1<<CS10);  // Set CS12 bit for 256 prescaler
+  TIMSK2 |= (1 << OCIE2A);            // enable timer compare interrupt
   interrupts();
 }  
 
 ISR(TIMER2_COMPA_vect){
-  if (EIGHT_HZ++ == (4 * 1000)) {  // every 4 seconds
+  if (EIGHT_HZ++ >= scanFrequency) {  
     EIGHT_HZ = 0;
-    sonarAction = INIT;
+    if (sonarAction == READY) {
+      sonarAction = INIT;
+    }
   }
 }
 
@@ -117,34 +117,50 @@ void Robot::turnRight(int degrees) {
 }
 
 
-float Robot::range () {
-    return sonar.range();
+float Robot::rangeAhead () {
+  if (servo.read() == 90) {
+    rangeForward = sonar.range();
+  }
+    return rangeForward;
 }
 
 
+float Robot::range () {
+    int sonarRange = sonar.range();
+    // Serial.println("range  is " + String(sonarRange) + "\" at servoAngle " + String(servo.read()));
+    return sonarRange;
+}
 
+
+void Robot::initiateRangeScan() {
+  Serial.println("force scan start");
+  sonarAction = INIT;
+  EIGHT_HZ = 0;
+}
 
 
 void Robot::rangeScan(int scanAngle) {
   int sonarRange;
+
   switch (sonarAction) {
     case INIT: // move to inital position
+      Serial.println("scan start...");
       sonarRange = 0;
       sonarRange = 0;
-      max[ANGLE] = 0;
+      max[ANGLE] = 90;
       max[RANGE] = 0;
-      report = 0;
       servoLimit = (scanAngle/2);
       servoAngle = 90-servoLimit; 
       servoDirection = +scanStep;
       moveServo(servoAngle);
+      sonar.setRate(Sonar::FAST);
       sonarAction = PING; 
       break;
       
     case MOVE: // move a step
       servoAngle = servoAngle + servoDirection;
-      servoAngle = min(servoAngle, 170);
-      servoAngle = max(servoAngle, 10);
+      servoAngle = min(servoAngle, 175);
+      servoAngle = max(servoAngle, 5);
       moveServo(servoAngle);
       sonarAction = PING;
       break;
@@ -152,8 +168,6 @@ void Robot::rangeScan(int scanAngle) {
     case PING: // take the range
       if (servoReady()){
         sonarRange = range();
-        Serial.println("range  is " + String(sonarRange) + "\" at servoAngle " + String(servoAngle));
-        // maxRange = max(maxRange, sonarRange);
         if(sonarRange > max[RANGE]) {
             max[RANGE] = sonarRange;
             max[ANGLE] = servoAngle;
@@ -172,17 +186,17 @@ void Robot::rangeScan(int scanAngle) {
       break;
 
     case DONE: //scan complete
-      if (report == 0){
-        turnAngle = max[ANGLE];
-        Serial.println("angle to maximum distance is " + String(max[ANGLE]));
-        report=1;
-      }
+      turnAngle = max[ANGLE];
+      Serial.println("angle to maximum distance is " + String(max[ANGLE]));
+      sonarAction = READY;
+      sonar.setRate(Sonar::SLOW);
       break;
 
     default:
       break;
   }
 }
+
 
 void Robot::moveServo(int servoAngle){
   if (servoReady()) {
@@ -191,16 +205,37 @@ void Robot::moveServo(int servoAngle){
     }
 }
 
+
 boolean Robot::servoReady(){
   return millis() > wait;
 }
 
+
 boolean Robot::scanComplete() {
+  Serial.println("---done?---");
+  Serial.print(servo.read());
+  Serial.print(" >= ");
+  Serial.print(90+servoLimit);
+  Serial.print(" > ");
+  Serial.println(servoDirection);
+  Serial.print(servo.read());
+  Serial.print(" <= ");
+  Serial.print(90-servoLimit);
+  Serial.print(" < ");
+  Serial.println(servoDirection);
+  Serial.println("--------------");
+
   return (
-    (servo.read() >= (90+servoLimit)) && (servoDirection >0) || 
-    (servo.read() <= (90-servoLimit)) && (servoDirection <0));
+    (servo.read() >= (90+servoLimit)) && (servoDirection > 0) || 
+    (servo.read() <= (90-servoLimit)) && (servoDirection < 0));
 }
+
 
 int Robot::getTurnAngle() {
   return turnAngle;
+}
+
+
+void Robot::clearTurnAngle() {
+  turnAngle = 90;
 }

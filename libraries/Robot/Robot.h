@@ -27,7 +27,10 @@ public:
     void turnRight(int degrees);
     void rangeScan(int scanAngle);
     float range();
+    float rangeAhead();
     int getTurnAngle();
+    void clearTurnAngle();
+    void initiateRangeScan();
 
 
 private:
