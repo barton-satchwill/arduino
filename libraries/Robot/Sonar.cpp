@@ -7,8 +7,7 @@
 
 #define PING_PIN 19
 int Sonar::count = 0;
-int pingFrequency = 10;
-
+int pingFrequency = Sonar::SLOW;
 
 Sonar::Sonar() {
     id = count++;
@@ -17,6 +16,10 @@ Sonar::Sonar() {
 
 String Sonar::toString() {
     return "Sonar " + String(id);
+}
+
+void Sonar::setRate(Sonar::Rate rate) {
+    pingFrequency = rate;
 }
 
 // This is the code that runs the PING))) Sensor

@@ -7,22 +7,24 @@
 #define Sonar_h
 
 #include <Arduino.h>
-// #include <AFMotor.h>
 
 class Sonar
 {
 public:
+    enum Rate {FAST = 30, SLOW  = 600};
+
     Sonar();
 
     float ping();
     float range();
     String toString();
+    void setRate(Rate rate);
+
 
 private:
     int id;
     static int count;
     long pingTime;
-    // int pingFrequency;
     long duration;
 
     float microsecondsToInches(long microseconds);
