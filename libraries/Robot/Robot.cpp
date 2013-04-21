@@ -6,6 +6,8 @@
 #include <Robot.h>
 #include <Logging.h>
 
+
+#define RADIANS_PER_DEGREE 0.0174532925
 //motor control shield
 #define SERVO 9
 enum {RANGE, ANGLE};
@@ -35,7 +37,7 @@ int range = 0;
 
 int turnAngle = 90;
 
-long scanFrequency = 1*1000;
+long scanFrequency = 3*2*1000;
 
 
 
@@ -144,7 +146,7 @@ void Robot::rangeScan(int scanAngle) {
 
   switch (sonarAction) {
     case INIT: // move to inital position
-      Serial.println("scan start...");
+      // Serial.println("scan start...");
       sonarRange = 0;
       sonarRange = 0;
       max[ANGLE] = 90;
@@ -167,7 +169,8 @@ void Robot::rangeScan(int scanAngle) {
 
     case PING: // take the range
       if (servoReady()){
-        sonarRange = range();
+        // favour directions closest to straight ahead
+        sonarRange = range() * sin(RADIANS_PER_DEGREE * servoAngle);
         if(sonarRange > max[RANGE]) {
             max[RANGE] = sonarRange;
             max[ANGLE] = servoAngle;
@@ -212,18 +215,18 @@ boolean Robot::servoReady(){
 
 
 boolean Robot::scanComplete() {
-  Serial.println("---done?---");
-  Serial.print(servo.read());
-  Serial.print(" >= ");
-  Serial.print(90+servoLimit);
-  Serial.print(" > ");
-  Serial.println(servoDirection);
-  Serial.print(servo.read());
-  Serial.print(" <= ");
-  Serial.print(90-servoLimit);
-  Serial.print(" < ");
-  Serial.println(servoDirection);
-  Serial.println("--------------");
+  // Serial.println("---done?---");
+  // Serial.print(servo.read());
+  // Serial.print(" >= ");
+  // Serial.print(90+servoLimit);
+  // Serial.print(" > ");
+  // Serial.println(servoDirection);
+  // Serial.print(servo.read());
+  // Serial.print(" <= ");
+  // Serial.print(90-servoLimit);
+  // Serial.print(" < ");
+  // Serial.println(servoDirection);
+  // Serial.println("--------------");
 
   return (
     (servo.read() >= (90+servoLimit)) && (servoDirection > 0) || 

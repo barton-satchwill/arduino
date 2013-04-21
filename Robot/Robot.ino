@@ -8,7 +8,8 @@
 #include <Servo.h>
 #include <Logging.h>
 
-/* TODO
+/* 
+DONE:
 -----------------------
  - ACTION_A runs continuously, even through a range scan.  This is good!
  - probably want to interrupt everything while backing up (move scan to ACTION_A?)
@@ -26,6 +27,8 @@
    - do we need to?  yes!
    - redefine Robot::range() to only give distance straight ahead?
    - check to see if not scanning?
+
+TODO:
 -----------------------
 - need to stop after backing up, while checking for new range
 - after backing up, check a wider range
@@ -36,7 +39,7 @@
  
  - expose the scan frequency
 */
-
+#define ROBOT_SPEED 125
 Robot *pRobot;
 long lastPing;
 enum action {ACTION_A, ACTION_B, ACTION_C, ACTION_D};
@@ -48,7 +51,7 @@ char* debugAction = actionString[ACTION_B];
 
 void setup() {
   Serial.begin(9600);
-  pRobot = new Robot(200);
+  pRobot = new Robot(ROBOT_SPEED);
     lastPing = millis();
     r = pRobot->rangeAhead();
 }
@@ -106,7 +109,7 @@ void drive() {
     case ACTION_D: // find out what where you are and what to do
       pRobot->rangeScan(170);
       if (pRobot->getTurnAngle() != 90){
-        pRobot->setSpeed(200);
+        pRobot->setSpeed(ROBOT_SPEED);
         robotAction = ACTION_C;
       }
       break;
