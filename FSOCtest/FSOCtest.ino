@@ -39,7 +39,6 @@
 #define rx 3
 #define tx 2
 #define no_such_pin 255
-#define PHOTOCELL A0
 #define LEDSENSOR A1
 #define SAMPLESIZE 10
 //-------------------------
@@ -53,6 +52,7 @@ int bitDelay = 5;
 int thisByte = '\~'; 
 long t;
 byte low = 0;
+int threshold = 200;
 
 SoftwareSerial mySerial(rx, tx); 
 
@@ -62,14 +62,13 @@ void setup(){
     pinMode(i,OUTPUT); 
     digitalWrite(i,LOW);
   }
-  pinMode(A0, INPUT);
   pinMode(LEDSENSOR, INPUT);
   digitalWrite(LEDr, HIGH);
   digitalWrite(LEDw, LOW);
   Serial.begin(9600);
   mySerial.begin(9600);
   t = millis();
-  Serial.println("away we go...");
+  tune();
 }
 
 
@@ -78,8 +77,8 @@ void loop(){
   //----------------------------------------------------------------------
   if (timerAction == TRANSMIT) { 
     if (Serial.available() == 0) {
-      mySerial.print(thisByte);   
-      Serial.print(thisByte);   
+      mySerial.write(thisByte);   
+      Serial.write(thisByte);   
       if(thisByte == 126) { thisByte = 32; } 
       thisByte++;
       Serial.print("-->");  
@@ -91,17 +90,17 @@ void loop(){
       byte data = Serial.read();
       low = 0;
       for (byte mask = 00000001; mask>0; mask <<= 1) {
-        digitalWrite(LEDlaser,(data & mask > 0));
-        digitalWrite(LEDtx,(data & mask > 0));
+        digitalWrite(LEDlaser,(data & mask) > 0);
+        digitalWrite(LEDtx,(data & mask) > 0);
         delay(bitDelay);
         
         // receive a single bit of transmitted data
         int val = getSensorReading(LEDSENSOR);
-        low += (data & mask);
-        digitalWrite(LEDrx,val);
+        low += (val * mask);
+        digitalWrite(LEDrx, val);
         if(digitalRead(LEDrx) != digitalRead(LEDtx)) { Serial.print("x");}
       }
-      Serial.print((char)low);
+        Serial.print((char)low);
       if (Serial.available()==0){Serial.println();}
     }
   }
@@ -126,10 +125,6 @@ int getSensorReading(int sensorPin){
 
 
 void printBits(byte data){
-//  Serial.println();
-//  Serial.print(data,BIN); 
-//  Serial.print(" : "); 
-//  Serial.println(data);
   for (byte mask = 00000001; mask>0; mask <<= 1) { 
     if (data & mask){
       digitalWrite(LEDlaser,HIGH); 
@@ -142,6 +137,27 @@ void printBits(byte data){
 //    delay(bitDelay);
   }
 }
+
+
+
+
+void tune() {
+  Serial.print("tuning...");
+  for (byte data = '\!'; data <= '\~'; data++){
+    for (byte mask = 00000001; mask>0; mask <<= 1){
+      digitalWrite(13, (data & mask) > 0);
+      digitalWrite(12, (data & mask) > 0);
+      delayMicroseconds(80);
+      int bitValue = getSensorReading(LEDSENSOR);
+      if (((data & mask) > 0) > bitValue){ (--threshold); }
+      if (((data & mask) > 0) < bitValue){ (++threshold); }
+    }
+  }
+  Serial.print("new threshold is ");
+  Serial.println(threshold);
+}
+
+
 
 
 //--------------------------------------------------------------------------
@@ -176,9 +192,4 @@ ISR(TIMER2_COMPA_vect){
 }
 
 //--------------------------------------------------------------------------
-
-
-
-
-
 
