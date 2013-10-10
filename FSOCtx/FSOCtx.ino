@@ -6,6 +6,16 @@
 //
 //----------------------------------------------------
 
+//-------------------------
+#define LEDinteruptA 4
+#define LEDinteruptB 5
+volatile int CLOCK_COUNTER = 0;
+enum timer_action {TRANSMIT, RECIEVE};
+char* timer_actions[] = {"TX", "RX"};
+volatile timer_action timerAction = TRANSMIT;
+volatile timer_action tempAction;
+int baudrate = 1000; 
+//-------------------------
 #define LEDlaser 12
 #define LEDtx 13
 int bitDelay = 50;
@@ -13,6 +23,7 @@ int bitDelay = 50;
 
 void setup() { 
   Serial.begin(9600); 
+  setupTimer();
   pinMode(LEDlaser, OUTPUT);
   pinMode(LEDtx, OUTPUT);
   digitalWrite(LEDlaser, LOW);
@@ -21,7 +32,7 @@ void setup() {
 } 
 
 void loop() { 
-  preamble();
+//  preamble();
 //  for (byte data = '\!'; data <= '\~'; data++){
 //    transmit(data);
 //  }
@@ -63,5 +74,30 @@ void preamble(){
   
 
 
+//--------------------------------------------------------------------------
 
+void setupTimer() {
+  noInterrupts();
+  // 8 bit timer
+  TCCR2A = 0;              // set entire TCCR2A register to 0
+  TCCR2B = 0;              // same for TCCR2B
+  TCNT2  = 0;              //initialize counter value to 0
+                           // set compare match register for 8khz increments
+  OCR2A = 249;             // = (16*10^6) / (1000 * 64) - 1 (must be <256)
+  TCCR2A |= (1 << WGM21);  // turn on CTC mode
+  TCCR2B |= (1 << CS12);   // | (1<<CS10);    // Set CS10 and CS12 bit for 64 prescaler
+  TIMSK2 |= (1 << OCIE2A); // enable timer compare interrupt
+  interrupts();
+}  
+
+
+ISR(TIMER2_COMPA_vect){
+  if (CLOCK_COUNTER++ == baudrate) { 
+    CLOCK_COUNTER = 0;
+    digitalWrite(LEDlaser, digitalRead(LEDlaser) ^ 1);
+    digitalWrite(LEDtx, digitalRead(LEDtx) ^ 1);
+  }
+}
+
+//--------------------------------------------------------------------------
 
