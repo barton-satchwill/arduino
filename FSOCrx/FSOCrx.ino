@@ -1,105 +1,194 @@
 
 //----------------------------------------------------
-//
-//   gnd o\---------[sensor]-----o A0
-//         \----------[led]------o 13 tell-tale
-//          \---------[led]------o 12 for tuning
-//
+// gnd o\---------[sensor]-----o A0
+//       \----------[led]------o 13 tell-tale
+//        \---------[led]------o 12 for tuning
+//----------------------------------------------------
+// A0  o-----------|
+// gnd o----/\/\/\-|---e[phototrans]c-----o 5v
+//            10k   
 //----------------------------------------------------
 
-//-------------------------
-#define LEDinteruptA 4
-#define LEDinteruptB 5
-volatile int CLOCK_COUNTER = 0;
-enum timer_action { 
-  TRANSMIT, RECIEVE};
-char* timer_actions[] = { 
-  "TX", "RX"};
-volatile timer_action timerAction = TRANSMIT;
-volatile timer_action tempAction;
-int blip = 0;
-volatile int previousstate = 0;
-volatile int flipcount = 0;
-volatile int fliplimit = 6;
-int baudrate = 1000; 
-//-------------------------
+
 #define LEDSENSOR A0
-#define SAMPLESIZE 10
 #define LEDrx 11
-int threshold = 446;
-long t;
+//-------------------------
+volatile int CLOCK_COUNTER = 0;
+volatile boolean sample = false;
+volatile boolean write_bit = false;
+volatile boolean syncd = false;
+volatile int previousstate = 0;
+int baudrate = 100; 
+//-------------------------
+int samplesize = 10;
+int threshold = 450;
+volatile int samplecount = 0;
+volatile int bitcount = 0;
+volatile int bitvalue=0;
+volatile  byte aByte;
+
 
 void setup() {
   setupTimer();
-  for (int i =3; i<=13;i++){ 
-    pinMode(i,OUTPUT); 
-    digitalWrite(i,LOW);
-  }
   Serial.begin(9600);
   pinMode(LEDSENSOR, INPUT);
   pinMode(LEDrx, OUTPUT);
   Serial.println("=========== Reciever ===========");
-  //    tune();
-  synchronise();
 }
 
 void loop() {
-}
-
-void guessBaudRate() {
-  int x;
-  if (x != getSensorReading(LEDSENSOR)){
-    long elapsed = millis()-t;
-    t=millis();
-    x=x^1;
-    if (abs(baudrate - elapsed) < (baudrate*0.1)){
-      baudrate = (baudrate*0.9) + (elapsed * 0.1);
-      Serial.print(elapsed);
-      Serial.print(" --> ");
+  if (Serial.available()){
+    char c = Serial.read();
+    if (c == '!') {
+      configure();
     }
-    Serial.println(baudrate);
-    digitalWrite(13,x);
+  }
+  if (syncd && write_bit){
+    write_a_bit();
+  }
+
+  if (syncd && sample){
+    sample_a_bit();
   }
 }
 
-void receive() {
-  digitalWrite(13, LOW);
-  digitalWrite(12, LOW);
-  byte low = 0;
-  //    byte data = Serial.read();
-  for (byte mask = 00000001; mask>0; mask <<= 1){
-    //      digitalWrite(13, (data & mask) > 0);
-    //      digitalWrite(12, (data & mask) > 0);
-    delayMicroseconds(100);
-    // receive a single bit of transmitted data
-    int bitValue = getSensorReading(LEDSENSOR);
-    low += (bitValue * mask);
-    digitalWrite(LEDrx, bitValue);
-    //Serial.print(bitValue);
-  }
-  Serial.print((char)low);
-  if (Serial.available()==0){
-    Serial.println();
-  }
+
+void sample_a_bit(){
+  samplecount++;
+  int sensorReading = getSensorReading(LEDSENSOR);
+  bitvalue += sensorReading;
+  sample = false;
 }
 
+
+void write_a_bit(){
+  if ( (bitvalue / (double)samplecount) > 0.5){
+    bitvalue = 1;
+  }
+  else{
+    bitvalue = 0;
+  }
+  bitWrite(aByte, bitcount, bitvalue);
+  samplecount = 0;
+  bitcount++;
+  if (bitcount == 7){
+    bitcount = 0; 
+    Serial.write(aByte);
+  aByte = 0;
+  }
+  bitvalue=0;
+  write_bit = false;
+}
 
 
 int getSensorReading(int sensorPin){
   long bitValue=0;
-  for (int i=0; i<SAMPLESIZE; i++){
+  for (int i=0; i<samplesize; i++){
     bitValue += (analogRead(sensorPin));
-    delayMicroseconds(100);
+    delayMicroseconds(10);
   }
-  bitValue = (bitValue/SAMPLESIZE);
-  //Serial.println(bitValue);
-  if (bitValue < threshold) {
-    bitValue = 0;
-  } 
-  else {
-    bitValue = 1;
+  bitValue = (bitValue/samplesize);
+  return (bitValue > threshold);
+}
+
+
+
+void synchronise(){
+  int fliplimit = 8;
+  int flipcount = 0;
+  
+  while (!syncd){
+    int state = getSensorReading(LEDSENSOR);
+    if (state != previousstate ) {
+      previousstate = state; 
+      flipcount++; 
+    }
+    if (flipcount == fliplimit){
+      syncd = true;
+//      sample = true;
+//      write_bit = false;
+      CLOCK_COUNTER = (baudrate/10)-1;
+    }    
   }
-  return bitValue;
+  Serial.println("synchronised!");
+}
+
+
+//--------------------------------------------------------------------------
+
+void setupTimer() {
+  noInterrupts();
+  // 8 bit timer
+  TCCR2A = 0;              // set entire TCCR2A register to 0
+  TCCR2B = 0;              // same for TCCR2B
+  TCNT2  = 0;              //initialize counter value to 0
+  // set compare match register for 8khz increments
+  OCR2A = 249;             // = (16*10^6) / (1000 * 64) - 1 (must be <256)
+  TCCR2A |= (1 << WGM21);  // turn on CTC mode
+  TCCR2B |= (1 << CS12);   // | (1<<CS10);    // Set CS10 and CS12 bit for 64 prescaler
+  TIMSK2 |= (1 << OCIE2A); // enable timer compare interrupt
+  interrupts();
+}  
+
+ISR(TIMER2_COMPA_vect){
+  CLOCK_COUNTER++;
+
+  if (syncd && CLOCK_COUNTER == baudrate) { 
+    write_bit = true;
+    CLOCK_COUNTER = 0;
+    digitalWrite(13, digitalRead(13)^1);
+  }
+
+  if (syncd && CLOCK_COUNTER%(baudrate/10) == 0) { 
+    sample = true;
+    digitalWrite(12, digitalRead(12)^1);
+  }
+}
+
+//--------------------------------------------------------------------------
+void configure(){
+  status();
+  while(!Serial.available()) {
+    ;
+  }
+  while(Serial.available())
+  {
+    byte s = Serial.read();
+    switch(s){
+    case 'b':
+      baudrate = Serial.parseInt();
+      Serial.print("baud rate = ");  Serial.println(baudrate);
+      break;
+    case 's':
+      Serial.print("synchronise...");
+      syncd = false;
+      synchronise();
+      break;
+    case 't':
+      tune();
+      break;
+    case 'z':
+      samplesize = Serial.parseInt();
+      Serial.print("sample size = "); Serial.println(samplesize);
+      break;
+    case '\\':
+      Serial.println();
+      Serial.println("--------------------------------------------------------");
+      break;
+    default:
+      Serial.println("default");
+      break;
+    }
+  }
+}
+
+
+void status(){
+  Serial.println("---------------------------------------------");
+  Serial.print("baud rate = ");    Serial.println(baudrate);
+  Serial.print("sample size = ");  Serial.println(samplesize);
+  Serial.print("threshold = ");    Serial.println(threshold);
+  Serial.println("---------------------------------------------");
 }
 
 
@@ -122,69 +211,5 @@ void tune() {
   Serial.print("new threshold is ");
   Serial.println(threshold);
 }
-
-
-
-
-
-
-//it's not enough to look for an edge, you have to look for a transition
-void synchronise(){
-  while (flipcount<fliplimit){   
-    volatile int x = getSensorReading(LEDSENSOR);
-    if (previousstate != x ) {
-      previousstate = x; 
-      flipcount++; 
-      digitalWrite(flipcount+2, HIGH);
-    }
-    if (flipcount == fliplimit){
-      flipcount = 100;
-      CLOCK_COUNTER = baudrate;
-      digitalWrite(13, HIGH);
-      digitalWrite(12, HIGH);
-    }    
-  }
-}
-
-
-//--------------------------------------------------------------------------
-
-void setupTimer() {
-  noInterrupts();
-  // 8 bit timer
-  TCCR2A = 0;              // set entire TCCR2A register to 0
-  TCCR2B = 0;              // same for TCCR2B
-  TCNT2  = 0;              //initialize counter value to 0
-  // set compare match register for 8khz increments
-  OCR2A = 249;             // = (16*10^6) / (1000 * 64) - 1 (must be <256)
-  TCCR2A |= (1 << WGM21);  // turn on CTC mode
-  TCCR2B |= (1 << CS12);   // | (1<<CS10);    // Set CS10 and CS12 bit for 64 prescaler
-  TIMSK2 |= (1 << OCIE2A); // enable timer compare interrupt
-  interrupts();
-}  
-
-ISR(TIMER2_COMPA_vect){
-  CLOCK_COUNTER++;
-  if (CLOCK_COUNTER >= baudrate) { 
-    CLOCK_COUNTER = 0;
-    digitalWrite(13, digitalRead(13) ^ 1);
-    //    sample();
-  }
-  if (CLOCK_COUNTER%150 == 0) { 
-    digitalWrite(11, digitalRead(11) ^ 1);
-    //    sample();
-  }
-}
-
-//--------------------------------------------------------------------------
-
-
-
-
-
-
-
-
-
 
 

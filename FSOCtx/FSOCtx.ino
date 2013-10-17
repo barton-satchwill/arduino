@@ -12,7 +12,9 @@ volatile int CLOCK_COUNTER = 0;
 volatile boolean send_bit = false;
 int baudrate = 100; 
 int bitcount = 0;
-
+//----------- debugging -----------
+char * buffer = "Uthis is a test";
+//---------------------------------
 
 void setup() { 
   Serial.begin(9600); 
@@ -25,6 +27,13 @@ void setup() {
 } 
 
 void loop() { 
+//----------- debugging -----------
+  for(int i=0; i<15; i++){
+    transmit_byte(buffer[i]);
+  }
+  Serial.println();
+  delay(2000);
+//---------------------------------
   if (Serial.available()){
     char c = Serial.read();
     if (c == '!') {
@@ -38,13 +47,13 @@ void loop() {
 
 void transmit_byte(byte data) {
   bitcount = 0;
-  while (bitcount < 8){
+  while (bitcount < 7){
     if(send_bit){
       digitalWrite(LEDlaser, bitRead(data, bitcount++));
       Serial.print(digitalRead(LEDlaser));
       send_bit = false;
       //----------- debugging -----------
-      if (bitcount == 8) { 
+      if (bitcount == 7) { 
         Serial.print("-->[");
         Serial.write(data);
         Serial.print("]-->");
