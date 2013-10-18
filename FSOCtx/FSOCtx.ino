@@ -10,7 +10,7 @@
 #define LEDtx 13
 volatile int CLOCK_COUNTER = 0;
 volatile boolean send_bit = false;
-int baudrate = 100; 
+volatile int baudrate = 100; 
 int bitcount = 0;
 //----------- debugging -----------
 char * buffer = "Uthis is a test";
@@ -28,11 +28,11 @@ void setup() {
 
 void loop() { 
 //----------- debugging -----------
-  for(int i=0; i<15; i++){
-    transmit_byte(buffer[i]);
-  }
-  Serial.println();
-  delay(2000);
+//  for(int i=0; i<15; i++){
+//    transmit_byte(buffer[i]);
+//  }
+//  Serial.println();
+//  delay(2000);
 //---------------------------------
   if (Serial.available()){
     char c = Serial.read();
@@ -108,11 +108,16 @@ void configure(){
     switch(s){
     case 'b':
       baudrate = Serial.parseInt();
+      CLOCK_COUNTER = 0;
       Serial.print("baud rate = "); 
       Serial.println(baudrate);   
       break;
     case 't':
       Serial.println("transmit");
+      for(int i=0; i<15; i++){
+        transmit_byte(buffer[i]);
+      }
+      Serial.println();
       break;
     default:
       Serial.println("default");
@@ -129,7 +134,5 @@ void status(){
   Serial.println(baudrate);   
   Serial.println("------------------------------------------");
 }
-
-
 
 
