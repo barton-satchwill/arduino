@@ -10,7 +10,7 @@
 #define LEDtx 13
 volatile int CLOCK_COUNTER = 0;
 volatile boolean send_bit = false;
-volatile int baudrate = 100; 
+volatile int baudrate = 10; 
 int bitcount = 0;
 //----------- debugging -----------
 char * buffer = "Uthis is a test";

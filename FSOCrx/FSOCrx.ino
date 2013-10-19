@@ -47,9 +47,7 @@ void loop() {
     write_a_bit();
   }
 
-  if (syncd && sample){
     sample_a_bit();
-  }
 }
 
 
@@ -57,7 +55,6 @@ void sample_a_bit(){
   samplecount++;
   int sensorReading = getSensorReading(LEDSENSOR);
   bitvalue += sensorReading;
-  sample = false;
 }
 
 
@@ -82,12 +79,7 @@ void write_a_bit(){
 
 
 int getSensorReading(int sensorPin){
-  long bitValue=0;
-//  for (int i=0; i<samplesize; i++){
-    bitValue += (analogRead(sensorPin));
-//  }
-//  bitValue = (bitValue/samplesize);
-  return (bitValue > threshold);
+  return (analogRead(sensorPin) > threshold);
 }
 
 
@@ -134,11 +126,6 @@ ISR(TIMER2_COMPA_vect){
     write_bit = true;
     CLOCK_COUNTER = 0;
     digitalWrite(13, digitalRead(13)^1);
-  }
-
-  if (syncd && CLOCK_COUNTER%(baudrate/10) == 0) { 
-    sample = true;
-    digitalWrite(12, digitalRead(12)^1);
   }
 }
 
@@ -193,14 +180,15 @@ void tune() {
   Serial.print("tuning...");
   for (byte data = '\!'; data <= '\~'; data++){
     for (byte mask = 00000001; mask>0; mask <<= 1){
-      digitalWrite(13, (data & mask) > 0);
-      digitalWrite(12, (data & mask) > 0);
+      int sentValue = ((data & mask) > 0);
+      digitalWrite(13, sentValue);
+      digitalWrite(12, sentValue);
       delayMicroseconds(80);
-      int val = getSensorReading(LEDSENSOR);
-      if (((data & mask) > 0) > val){ 
+      int recievedValue = getSensorReading(LEDSENSOR);
+      if (sentValue > recievedValue){ 
         --threshold; 
       }
-      if (((data & mask) > 0) < val){ 
+      if (sentValue < recievedValue){ 
         ++threshold; 
       }
     }
