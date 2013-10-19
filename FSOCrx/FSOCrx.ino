@@ -18,9 +18,9 @@ volatile boolean sample = false;
 volatile boolean write_bit = false;
 volatile boolean syncd = false;
 volatile int previousstate = 0;
-int baudrate = 100; 
+int baudrate = 10; 
 //-------------------------
-int samplesize = 10;
+int samplesize = 1;
 int threshold = 450;
 volatile int samplecount = 0;
 volatile int bitcount = 0;
@@ -83,11 +83,10 @@ void write_a_bit(){
 
 int getSensorReading(int sensorPin){
   long bitValue=0;
-  for (int i=0; i<samplesize; i++){
+//  for (int i=0; i<samplesize; i++){
     bitValue += (analogRead(sensorPin));
-    delayMicroseconds(10);
-  }
-  bitValue = (bitValue/samplesize);
+//  }
+//  bitValue = (bitValue/samplesize);
   return (bitValue > threshold);
 }
 
@@ -105,8 +104,6 @@ void synchronise(){
     }
     if (flipcount == fliplimit){
       syncd = true;
-//      sample = true;
-//      write_bit = false;
       CLOCK_COUNTER = (baudrate/10)-1;
     }    
   }
